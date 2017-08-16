@@ -2,6 +2,8 @@ package ftpapp;
 
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import model.*;
 import javafx.fxml.FXML;
 import javafx.event.ActionEvent;
@@ -9,9 +11,10 @@ import javafx.scene.control.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import org.apache.commons.net.ftp.FTPClient;
+import org.apache.commons.net.ftp.FTPFile;
 
+import java.io.File;
 import java.io.IOException;
-
 
 public class Controller {
 
@@ -34,6 +37,18 @@ public class Controller {
     private PasswordField txt_password;
 
     @FXML
+    private ListView<String> view_remote;
+
+    @FXML
+    private ObservableList<String> remoteItems = FXCollections.observableArrayList();
+
+    @FXML
+    private ListView<String> view_local;
+
+    @FXML
+    private ObservableList<String> localItems = FXCollections.observableArrayList();
+
+    @FXML
     private Button btn_disconnect;
 
     @FXML
@@ -46,6 +61,9 @@ public class Controller {
     @FXML
     private void connectAction(ActionEvent ae) {
         ftp = new FTPClient();
+        System.out.println(System.getProperty("user.home"));
+        //System.out.println(ftp.changeWorkingDirectory(remoteFileDir));
+        //ftp.changeWorkingDirectory(remoteFileDir);
         try {
 
             if (txt_servername.getText().isEmpty()) {
@@ -69,27 +87,25 @@ public class Controller {
             if (session.login()) {
                 txt_login_status.setText("Connected!");
                 circle_login_status.setFill(Color.GREEN);
+                remoteFileList();
+                localFileAndDirecotyList(System.getProperty("user.home"));
             }
         } catch (IOException e) {
 
         }
-
-//            session = new Session(ftp, "danielng", txt_password.getText(), "127.0.0.1", 21, txt_log);
-
     }
 
     @FXML
     private void disconnectAction(ActionEvent ae) {
         try {
-            if(txt_login_status.getText().equals("Not Connected")) {
+            if (txt_login_status.getText().equals("Not Connected")) {
                 throw new Exception();
             }
             ftp.disconnect();
             txt_log.appendText("Disconnected\n");
             txt_login_status.setText("Not Connected");
             circle_login_status.setFill(Color.RED);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             listenForScroll(txt_log);
             txt_log.appendText("Error: Not connected\n");
         }
@@ -113,11 +129,40 @@ public class Controller {
 
     private void listenForScroll(TextArea ta) {
         txt_log.textProperty().addListener(new ChangeListener<Object>() {
-                @Override
-                public void changed(ObservableValue<?> observable, Object oldValue,
-                                    Object newValue) {
-                    txt_log.setScrollTop(Double.MAX_VALUE);
-                }
-            });
+            @Override
+            public void changed(ObservableValue<?> observable, Object oldValue,
+                                Object newValue) {
+                txt_log.setScrollTop(Double.MAX_VALUE);
+            }
+        });
+    }
+
+    private void remoteFileList() {
+        try {
+
+            FTPFile[] filesArray = ftp.listFiles();
+
+            for (FTPFile fileItem : filesArray) {
+                String info = fileItem.getName();
+                remoteItems.add(info);
+            }
+            view_remote.setItems(remoteItems);
+            view_remote.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void localFileAndDirecotyList(String dirNsme) {
+        File dirTolist = new File(dirNsme);
+
+        //Get all of the files from a direcory
+        File[] fileArray = dirTolist.listFiles();
+
+        for (File fileObj : fileArray) {
+            localItems.add(fileObj.getAbsolutePath());
+            view_local.setItems(localItems);
+        }
+        view_local.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
     }
 }
