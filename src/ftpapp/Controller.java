@@ -40,13 +40,13 @@ public class Controller {
     private ListView<String> view_remote;
 
     @FXML
-    private ObservableList<String> remoteItems = FXCollections.observableArrayList();
-
-    @FXML
     private ListView<String> view_local;
 
     @FXML
-    private ObservableList<String> localItems = FXCollections.observableArrayList();
+    protected ObservableList<String> localItems = FXCollections.observableArrayList();
+
+    @FXML
+    private ObservableList<String> remoteItems = FXCollections.observableArrayList();
 
     @FXML
     private Button btn_disconnect;
@@ -55,15 +55,17 @@ public class Controller {
     private TextArea txt_log;
 
     public Session session;
-
+    public Get get;
+    public Delete delete;
     protected FTPClient ftp;
+    public List listObj;
 
     @FXML
     private void connectAction(ActionEvent ae) {
         ftp = new FTPClient();
+        listObj = new List(view_remote, view_local, localItems, remoteItems);
         System.out.println(System.getProperty("user.home"));
-        //System.out.println(ftp.changeWorkingDirectory(remoteFileDir));
-        //ftp.changeWorkingDirectory(remoteFileDir);
+
         try {
 
             if (txt_servername.getText().isEmpty()) {
@@ -87,9 +89,9 @@ public class Controller {
             if (session.login()) {
                 txt_login_status.setText("Connected!");
                 circle_login_status.setFill(Color.GREEN);
-                remoteFileList();
-                //localFileAndDirecotyList("C:\\Users\\Public");
-                localFileAndDirecotyList(System.getProperty("user.home"));
+
+                listObj.remoteFileList(ftp);
+                listObj.localFileAndDirectoryList(System.getProperty("user.home"));
             }
         } catch (IOException e) {
 
@@ -115,6 +117,17 @@ public class Controller {
     @FXML
     private void downloadAction(ActionEvent ae) {
 
+        try {
+            ObservableList<String> localDirectoryList = view_local.getSelectionModel().getSelectedItems();
+            ObservableList<String> remoteDirectoryList = view_remote.getSelectionModel().getSelectedItems();
+            String localDirectory = localDirectoryList.get(0);
+            String remoteDirectory = remoteDirectoryList.get(0);
+            get = new Get(ftp, txt_log, localDirectory, remoteDirectory);
+        }
+        catch (Exception e) {
+            listenForScroll(txt_log);
+            txt_log.appendText("Error: File transfer did not complete. Please select valid file and directory from list.\n");
+        }
     }
 
     @FXML
@@ -125,7 +138,15 @@ public class Controller {
 
     @FXML
     private void deleteRemoteAction(ActionEvent ae) {
-
+        try {
+            ObservableList<String> remoteDirectoryList = view_remote.getSelectionModel().getSelectedItems();
+            String remoteDirectory = remoteDirectoryList.get(0);
+            delete = new Delete(ftp, txt_log, remoteDirectory);
+        }
+        catch (Exception e) {
+            listenForScroll(txt_log);
+            txt_log.appendText("Error: File transfer did not complete. Please select valid file and directory from list.\n");
+        }
     }
 
     private void listenForScroll(TextArea ta) {
@@ -136,36 +157,5 @@ public class Controller {
                 txt_log.setScrollTop(Double.MAX_VALUE);
             }
         });
-    }
-
-    private void remoteFileList() {
-        try {
-
-            FTPFile[] filesArray = ftp.listFiles();
-
-            for (FTPFile fileItem : filesArray) {
-                String info = fileItem.getName();
-                System.out.println(fileItem.getName());
-                remoteItems.add(info);
-            }
-            view_remote.setItems(remoteItems);
-            view_remote.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void localFileAndDirecotyList(String dirNsme) {
-        File dirTolist = new File(dirNsme);
-
-        //Get all of the files from a direcory
-        File[] fileArray = dirTolist.listFiles();
-
-        for (File fileObj : fileArray) {
-            System.out.println(fileObj.getAbsolutePath());
-            localItems.add(fileObj.getAbsolutePath());
-            view_local.setItems(localItems);
-        }
-        view_local.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
     }
 }
