@@ -55,9 +55,9 @@ public class Controller {
     private TextArea txt_log;
 
     public Session session;
-
+    public Get get;
+    public Delete delete;
     protected FTPClient ftp;
-
     public List listObj;
 
     @FXML
@@ -117,6 +117,17 @@ public class Controller {
     @FXML
     private void downloadAction(ActionEvent ae) {
 
+        try {
+            ObservableList<String> localDirectoryList = view_local.getSelectionModel().getSelectedItems();
+            ObservableList<String> remoteDirectoryList = view_remote.getSelectionModel().getSelectedItems();
+            String localDirectory = localDirectoryList.get(0);
+            String remoteDirectory = remoteDirectoryList.get(0);
+            get = new Get(ftp, txt_log, localDirectory, remoteDirectory);
+        }
+        catch (Exception e) {
+            listenForScroll(txt_log);
+            txt_log.appendText("Error: File transfer did not complete. Please select valid file and directory from list.\n");
+        }
     }
 
     @FXML
@@ -127,7 +138,15 @@ public class Controller {
 
     @FXML
     private void deleteRemoteAction(ActionEvent ae) {
-
+        try {
+            ObservableList<String> remoteDirectoryList = view_remote.getSelectionModel().getSelectedItems();
+            String remoteDirectory = remoteDirectoryList.get(0);
+            delete = new Delete(ftp, txt_log, remoteDirectory);
+        }
+        catch (Exception e) {
+            listenForScroll(txt_log);
+            txt_log.appendText("Error: File transfer did not complete. Please select valid file and directory from list.\n");
+        }
     }
 
     private void listenForScroll(TextArea ta) {
